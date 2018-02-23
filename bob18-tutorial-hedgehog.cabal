@@ -2,11 +2,11 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ccf4dc84bb49f3ffec66f0f56aa853a4261183ff3af8bb72b562f0790c92915
+-- hash: 48810913ec818e9cc5f1a510f33bfeff61a1642a2e95de13e24173e011d46bfc
 
 name:           bob18-tutorial-hedgehog
 version:        0.1
-synopsis:       Coure materical for http://bobkonf.de/2018/fischmann.html
+synopsis:       Course material for http://bobkonf.de/2018/fischmann.html
 description:    Please see README.md
 category:       Testing
 homepage:       https://github.com/fisx/bob18-tutorial-hedgehog

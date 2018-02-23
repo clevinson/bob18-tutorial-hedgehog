@@ -44,14 +44,42 @@ go = do
 -- - Putting back what you got doesn't change anything
 -- - Setting twice is the same as setting once
 --
+--
 prop_Lens1 :: Property
-prop_Lens1 = undefined
+prop_Lens1 = property $ do
+  s :: (Bool, Int) <- forAll $ do -- ((,) <%> Gen.bool :: Int -> (Bool, Int)) <*> Gen.int (Range.linearBounded)
 
+  -- remember these guys vv
+  -- (<$> :: (a -> b) -> f a -> f b
+  -- (<*> :: f (a -> b) -> f a -> f b
+    b <- Gen.bool
+    i <- Gen.int (Range.linearBounded)
+    pure (b, i)
+  v :: Bool <- forAll Gen.bool
+  v' :: Bool <- forAll Gen.bool
 
+  let lns :: Lens' (Bool, Int) Bool
+      lns = _1
 
+  view lns (set lns v s) === v
+  set lns (view lns s) s === s
+  set lns v' (set lns v s) === set lns v' s
 
+lensLaws :: (Eq s, Eq v, Show s, Show v) =>Lens' s v -> Gen s -> Gen v -> Property
+lensLaws lns sgen vgen = property $ do
+  s  <- forAll sgen
+  v  <- forAll vgen
+  v' <- forAll vgen
 
+  view lns (set lns v s) === v
+  set lns (view lns s) s === s
+  set lns v' (set lns v s) === set lns v' s
 
+prop_Lens2 :: Property
+prop_Lens2 = lensLaws _1 ((,) <$> Gen.bool <*> Gen.bool) Gen.bool
+
+prop_Lens3 :: Property
+prop_Lens3 = lensLaws _2 ((,) <$> Gen.bool <*> Gen.bool) Gen.bool
 
 -- * monoid laws
 
@@ -60,6 +88,11 @@ prop_Lens1 = undefined
 --
 monoidLaws :: (Monoid m) => Gen m -> Property
 monoidLaws = undefined
+-- monoidLaws mgen = property $ do
+-- m <- mgen
+-- n <- mgen
+-- m <> mempty === mempty <> m
+
 
 
 prop_MonoidIntList :: Property

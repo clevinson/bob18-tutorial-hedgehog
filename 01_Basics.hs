@@ -4,6 +4,7 @@
 
 module Basics where
 
+import           Debug.Trace -- (traceShow)
 import           Data.List
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -11,12 +12,31 @@ import qualified Hedgehog.Range as Range
 
 
 prop_const :: Property
-prop_const = property $ True === True
+prop_const = property $ do
+  1 === 1
+  failure
+
+prop_sort1 :: Property
+prop_sort1 = property $ do
+  let xs = [1, 2, 3]
+  length (sort xs) === length xs
+
+prop_sort1_2 :: Property
+prop_sort1_2 = property $ do
+  xs <- forAll $ do
+    x <- Gen.int (Range.linear (-50) 50)
+    pure [x]
+  traceShow xs $
+    length (sort xs) === length xs
+
 
 iAmReady :: IO ()
 iAmReady = do
   _ <- checkParallel $$(discover)
   pure ()
+
+-- import Basics
+-- check prop_const
 
 
 
@@ -52,4 +72,32 @@ existsPairSum xs goal = f xs' (reverse xs')
     f xs_@((_, x):xs_') ys_@((_, y):ys_') = case x + y of
       shot | shot == goal -> True
            | shot < goal  -> f xs_' ys_
-           | otherwise    -> f xs_ ys_'
+           | otherwise    -> False -- f xs_ ys_'
+
+
+
+-- WE WANT Property tests for hte above!!
+-- So we make a second Oracle implementation, which is slow, but easier to reason
+-- if one dissagrees with the other.. then we can see there's a problem
+existsPairSumOracle :: [Integer] -> Integer -> Bool
+existsPairSumOracle xs goal = not $ null
+  [ (a, b) | a <- xs, b <- xs \\ [a], a + b == goal ]
+
+
+prop_existsPairSum :: Property
+prop_existsPairSum = property $ do
+  xs <- forAll $ Gen.list
+          (Range.linear 0 100)
+          (Gen.integral (Range.linear (-500000) 500000))
+  goal <- forAll $ Gen.integral (Range.linear (-500000) 500000)
+  -- alternatively... if we aren't finding any goals that work,
+  -- we could manually select a goal that will result in true
+  --goal <- Gen.choice [ pure . sum $ take 2 xs -- True
+  --                   , pure $ 50000 * 2 + 1 -- False
+  --                   -- , Gen.integral (Range.linear (-500000, 500000)) -- probably True
+  --                   ]
+
+  traceShow (existsPairSum xs goal) $ do
+    annotate "web"
+    existsPairSum xs goal === existsPairSumOracle xs goal
+  

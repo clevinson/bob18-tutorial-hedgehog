@@ -21,23 +21,35 @@ import Control.Monad.IO.Class
 import Control.Concurrent.MVar as MVar
 import Debug.Trace
 
+-- The semantics of MVar is that you can take a value out and its empty,
+-- and if somebody else tries to take a value out,
+-- then its empty and blocks until someone puts a value in
 
 -- * the system we want to test
 
+-- creates a new mutable variable
 mnew :: IO (MVar Int)
 mnew = MVar.newMVar 0
 
+-- read a value from an Mvar, as soon as it is full
 mread :: MVar Int -> IO Int
 mread = MVar.readMVar
 
+-- write a value into an MVar, no matter whether full or empty.
 mwrite :: MVar Int -> Int -> IO ()
 mwrite mvar i = MVar.modifyMVar_ mvar $ \_ -> pure i
 
+-- increment a value by one.
 minc :: MVar Int -> IO ()
 minc mvar = do
   i <- mread mvar
   mwrite mvar (i - 1)
 
+
+-- since we have effects and not pure functions, this is not trivial
+-- the idea is:
+-- you have a state machine, and the state space is called a model
+--
 
 -- * state model
 
@@ -73,6 +85,7 @@ instance HTraversable MWrite where
 
 
 s_mnew :: (MonadGen n, MonadTest m, MonadIO m) => Command n m ModelState
+-- command takes a generator, a thing, and a list of callbacks
 s_mnew = Command gen ex callbacks
   where
     gen _ = Just $ pure MNew
@@ -90,6 +103,7 @@ s_mread = Command gen ex callbacks
     gen (Store []) = Nothing
     gen (Store heap@(_:_)) = Just $ MRead <$> Gen.element (fst <$> heap)
 
+    --                                v we take it, and then un-opaque it
     ex (MRead mvar) = liftIO $ mread (opaque mvar)
 
     -- hedgehog issue coming up (request for help, not bug report yet).  for
@@ -137,6 +151,7 @@ prop_mvar = property $ do
     [ s_mnew
     , s_mread
     , s_mwrite
+    -- , s_minc -- check the spoiler for hte implementation of this :)
     ]
   executeSequential initialModelState actions
 

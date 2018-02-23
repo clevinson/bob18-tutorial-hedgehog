@@ -37,6 +37,7 @@ minc :: MVar Int -> IO ()
 minc mvar = do
   i <- mread mvar
   mwrite mvar (i - 1)
+  -- ^ toggling this so increment performs an (i + 1) will fix the bug
 
 
 -- * state model
@@ -194,6 +195,7 @@ prop_mvar' = withTests 100 . withRetries 1 . property $ do
     ]
   test $ executeParallel initialModelState actions
 -}
+-- ^ this is how you can check probabalistically for race conditions
 
 
 go :: IO Bool
